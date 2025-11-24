@@ -43,17 +43,50 @@ jobs:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          # Write private key, handling potential formatting issues
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          # Remove any trailing whitespace/newlines
+          sed -i '' 's/[[:space:]]*$//' ~/.ssh/deploy_key 2>/dev/null || sed -i 's/[[:space:]]*$//' ~/.ssh/deploy_key
+          # Add EC2 host to known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>&1 || true
+          chmod 644 ~/.ssh/known_hosts
+          
+          # Debug: Verify key format (without exposing the key)
+          echo "Checking SSH key format..."
+          head -n 1 ~/.ssh/deploy_key | grep -q "BEGIN" && echo "✓ Key header found" || echo "⚠ Key header missing"
+          tail -n 1 ~/.ssh/deploy_key | grep -q "END" && echo "✓ Key footer found" || echo "⚠ Key footer missing"
+          
+      - name: Test SSH Connection
+        run: |
+          echo "Testing SSH connection to EC2..."
+          ssh -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=10 \
+              -v \
+              ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+              'echo "SSH connection successful!"' || {
+            echo "❌ SSH connection failed!"
+            echo "Please verify:"
+            echo "1. EC2_HOST is correct: ${{ secrets.EC2_HOST }}"
+            echo "2. EC2_USER is correct: ${{ secrets.EC2_USER }}"
+            echo "3. Private key matches the public key on EC2 instance"
+            echo "4. EC2 security group allows SSH from GitHub Actions IPs"
+            exit 1
+          }
 
       - name: Deploy to EC2
         run: |
           scp -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=10 \
               backend/deploy-package.tar.gz \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/
           
           ssh -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=10 \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
               'bash -s' << 'EOF'
             set -e
@@ -104,6 +137,8 @@ jobs:
       - name: Verify deployment
         run: |
           ssh -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=10 \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
               'sudo systemctl is-active finance-app && echo "Service is running" || exit 1'
 
