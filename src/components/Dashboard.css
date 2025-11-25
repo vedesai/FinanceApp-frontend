@@ -1,0 +1,254 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 0;
+}
+
+/* Metric Cards */
+.dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.metric-card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  padding: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.metric-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px 0;
+  height: 52px;
+}
+
+.metric-card-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #45556c;
+  letter-spacing: -0.3125px;
+}
+
+.metric-card-icon {
+  color: #45556c;
+  flex-shrink: 0;
+}
+
+.metric-card-content {
+  flex: 1;
+  padding: 0 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-value {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+}
+
+.metric-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.3125px;
+  width: fit-content;
+}
+
+.metric-badge.positive {
+  background-color: #b9f8cf;
+  color: #00a63e;
+}
+
+.metric-badge.negative {
+  background-color: #b9f8cf;
+  color: #00a63e;
+}
+
+/* Chart Cards */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.chart-card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.chart-card.full-width {
+  width: 100%;
+}
+
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 20px;
+}
+
+.chart-icon {
+  color: #0f172b;
+  flex-shrink: 0;
+}
+
+.chart-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+  margin: 0;
+}
+
+.chart-content {
+  height: 300px;
+  width: 100%;
+}
+
+/* Asset Allocation */
+.asset-allocation-content {
+  display: flex;
+  gap: 32px;
+  height: 300px;
+}
+
+.pie-chart-container {
+  flex: 1;
+  max-width: 950px;
+}
+
+.asset-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 200px;
+  padding-top: 30px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+
+.legend-label {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+}
+
+.legend-value {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #45556c;
+  letter-spacing: -0.3125px;
+}
+
+/* Loading and Error States */
+.dashboard-loading,
+.dashboard-error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dashboard-error {
+  color: #ef4444;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .asset-allocation-content {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .pie-chart-container {
+    max-width: 100%;
+  }
+
+  .asset-legend {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-card {
+    padding: 20px;
+  }
+
+  .chart-card {
+    padding: 20px;
+  }
+
+  .chart-content {
+    height: 250px;
+  }
+
+  .asset-allocation-content {
+    gap: 24px;
+  }
+}
+
