@@ -23,7 +23,7 @@ echo "Creating application directories..."
 sudo mkdir -p /opt/finance-app
 sudo mkdir -p /opt/finance-app/backups
 sudo mkdir -p /opt/finance-app/logs
-sudo chown -R ec2-user:ec2-user /opt/finance-app
+sudo chown -R ubuntu:ubuntu /opt/finance-app
 
 # Install systemd service file
 if [ -f "finance-app.service" ]; then
@@ -54,7 +54,7 @@ ICICIDIRECT_PASSWORD=your_password
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 EOF
 
-sudo chown ec2-user:ec2-user /opt/finance-app/.env
+sudo chown ubuntu:ubuntu /opt/finance-app/.env
 sudo chmod 600 /opt/finance-app/.env
 
 # Configure firewall (if using security groups, this may not be necessary)
@@ -74,7 +74,7 @@ sudo tee /etc/logrotate.d/finance-app > /dev/null << 'EOF'
     delaycompress
     missingok
     notifempty
-    create 0644 ec2-user ec2-user
+    create 0644 ubuntu ubuntu
     sharedscripts
 }
 EOF

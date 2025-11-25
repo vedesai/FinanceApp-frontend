@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=ec2-user
-Group=ec2-user
+User=ubuntu
+Group=ubuntu
 WorkingDirectory=/opt/finance-app
 ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/finance-app/finance-backend.jar
 Restart=always

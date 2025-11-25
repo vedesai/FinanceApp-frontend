@@ -31,7 +31,7 @@ sudo systemctl stop $SERVICE_NAME || true
 if [ -f "finance-backend.jar" ]; then
   echo "Copying new JAR..."
   sudo cp finance-backend.jar $DEPLOY_DIR/
-  sudo chown ec2-user:ec2-user $DEPLOY_DIR/finance-backend.jar
+  sudo chown ubuntu:ubuntu $DEPLOY_DIR/finance-backend.jar
 else
   echo "Error: finance-backend.jar not found in current directory"
   exit 1

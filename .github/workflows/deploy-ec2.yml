@@ -117,7 +117,7 @@ jobs:
             
             # Copy new JAR
             sudo cp $EXTRACT_DIR/finance-backend.jar $DEPLOY_DIR/
-            sudo chown ec2-user:ec2-user $DEPLOY_DIR/finance-backend.jar
+            sudo chown ubuntu:ubuntu $DEPLOY_DIR/finance-backend.jar
             
             # Copy and setup systemd service if it doesn't exist
             if [ ! -f /etc/systemd/system/finance-app.service ]; then
