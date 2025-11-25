@@ -61,18 +61,42 @@ jobs:
       - name: Test SSH Connection
         run: |
           echo "Testing SSH connection to EC2..."
+          echo "EC2_HOST: ${{ secrets.EC2_HOST }}"
+          echo "EC2_USER: ${{ secrets.EC2_USER }}"
+          
+          # Test network connectivity first
+          echo "Testing network connectivity..."
+          if ping -c 3 ${{ secrets.EC2_HOST }} 2>&1 | grep -q "0 received"; then
+            echo "⚠️  Warning: Cannot ping EC2 host. Instance might be stopped or unreachable."
+          else
+            echo "✓ Network connectivity OK"
+          fi
+          
+          # Test SSH connection
           ssh -i ~/.ssh/deploy_key \
               -o StrictHostKeyChecking=no \
-              -o ConnectTimeout=10 \
+              -o ConnectTimeout=15 \
+              -o ServerAliveInterval=5 \
+              -o ServerAliveCountMax=3 \
               -v \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
               'echo "SSH connection successful!"' || {
+            echo ""
             echo "❌ SSH connection failed!"
-            echo "Please verify:"
-            echo "1. EC2_HOST is correct: ${{ secrets.EC2_HOST }}"
-            echo "2. EC2_USER is correct: ${{ secrets.EC2_USER }}"
-            echo "3. Private key matches the public key on EC2 instance"
-            echo "4. EC2 security group allows SSH from GitHub Actions IPs"
+            echo ""
+            echo "Troubleshooting steps:"
+            echo "1. Verify EC2_HOST is correct: ${{ secrets.EC2_HOST }}"
+            echo "2. Verify EC2_USER is correct: ${{ secrets.EC2_USER }} (should be 'ubuntu' for Ubuntu instances)"
+            echo "3. Check EC2 instance status in AWS Console - ensure it's running"
+            echo "4. Verify EC2 security group allows SSH (port 22) from GitHub Actions IPs"
+            echo "   - GitHub Actions uses dynamic IPs, consider allowing SSH from 0.0.0.0/0 temporarily for testing"
+            echo "   - Or use AWS Systems Manager Session Manager as an alternative"
+            echo "5. Verify private key matches the public key on EC2 instance"
+            echo "6. Check EC2 instance logs in AWS Console for any errors"
+            echo ""
+            echo "Security Group Configuration:"
+            echo "  - Inbound Rule: SSH (22) from GitHub Actions IPs or 0.0.0.0/0"
+            echo "  - Outbound Rule: All traffic (for SSH responses)"
             exit 1
           }
 
