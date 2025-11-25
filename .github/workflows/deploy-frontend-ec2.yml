@@ -178,45 +178,39 @@ jobs:
             NGINX_ENABLED="/etc/nginx/sites-enabled/finance-frontend"
             
             # Create nginx configuration
-            sudo tee $NGINX_CONF > /dev/null << 'NGINX_CONFIG'
-server {
-    listen 80;
-    server_name _;
-    root /var/www/finance-frontend;
-    index index.html;
-    
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
-    
-    # Serve static files
-    location / {
-        try_files $uri $uri/ /index.html;
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-    }
-    
-    # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-    
-    # Proxy API requests to backend
-    location /api {
-        proxy_pass http://localhost:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-NGINX_CONFIG
+            sudo tee /tmp/nginx-frontend-temp.conf > /dev/null << 'NGINX_EOF'
+            server {
+                listen 80;
+                server_name _;
+                root /var/www/finance-frontend;
+                index index.html;
+                gzip on;
+                gzip_vary on;
+                gzip_min_length 1024;
+                gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
+                location / {
+                    try_files $uri $uri/ /index.html;
+                    add_header Cache-Control "no-cache, no-store, must-revalidate";
+                }
+                location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                    expires 1y;
+                    add_header Cache-Control "public, immutable";
+                }
+                location /api {
+                    proxy_pass http://localhost:8080;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade $http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_cache_bypass $http_upgrade;
+                }
+            }
+            NGINX_EOF
+            sed 's/^            //' /tmp/nginx-frontend-temp.conf | sudo tee $NGINX_CONF > /dev/null
+            rm -f /tmp/nginx-frontend-temp.conf
             
             # Enable site
             sudo ln -sf $NGINX_CONF $NGINX_ENABLED
