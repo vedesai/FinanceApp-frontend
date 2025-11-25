@@ -114,12 +114,12 @@ jobs:
             sudo systemctl stop finance-app || true
             
             # Copy new JAR
-            sudo cp finance-backend.jar $DEPLOY_DIR/
+            sudo cp $EXTRACT_DIR/finance-backend.jar $DEPLOY_DIR/
             sudo chown ec2-user:ec2-user $DEPLOY_DIR/finance-backend.jar
             
             # Copy and setup systemd service if it doesn't exist
             if [ ! -f /etc/systemd/system/finance-app.service ]; then
-              sudo cp finance-app.service /etc/systemd/system/
+              sudo cp $EXTRACT_DIR/finance-app.service /etc/systemd/system/
               sudo systemctl daemon-reload
               sudo systemctl enable finance-app
             fi
@@ -132,7 +132,7 @@ jobs:
             sudo systemctl status finance-app --no-pager || true
             
             # Cleanup
-            rm -rf /tmp/deploy-package.tar.gz /tmp/deploy-package
+            rm -rf /tmp/deploy-package.tar.gz $EXTRACT_DIR
             
             echo "Deployment completed successfully!"
           EOF
