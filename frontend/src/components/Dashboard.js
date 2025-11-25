@@ -24,19 +24,19 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const response = await dashboardAPI.getSummary();
-      setSummary(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load dashboard data');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const response = await dashboardAPI.getSummary();
+        setSummary(response.data);
+        setError(null);
+      } catch (err) {
+        setError('Failed to load dashboard data');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchDashboardData();
   }, []);
 
