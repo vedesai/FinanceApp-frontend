@@ -7,12 +7,15 @@ Type=simple
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/opt/finance-app
-ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/finance-app/finance-backend.jar
+# Use which java to find Java path, fallback to common locations
+ExecStart=/bin/bash -c 'JAVA_CMD=$(which java || echo /usr/bin/java); exec $JAVA_CMD $JAVA_OPTS -jar /opt/finance-app/finance-backend.jar'
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=finance-app
+# Give service time to start before considering it failed
+TimeoutStartSec=60
 
 # Load environment variables from file (if exists)
 # Update this file with your actual values: /opt/finance-app/.env

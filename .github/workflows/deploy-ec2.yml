@@ -150,12 +150,69 @@ jobs:
               sudo systemctl enable finance-app
             fi
             
+            # Verify prerequisites before starting
+            echo "Verifying prerequisites..."
+            if ! command -v java &> /dev/null; then
+              echo "❌ Java is not installed!"
+              echo "Installing Java 17..."
+              sudo apt-get update -qq
+              sudo apt-get install -y openjdk-17-jdk || sudo apt-get install -y default-jdk
+            fi
+            java -version || { echo "❌ Java installation failed"; exit 1; }
+            
+            # Verify JAR file exists and is readable
+            if [ ! -f "$DEPLOY_DIR/finance-backend.jar" ]; then
+              echo "❌ JAR file not found at $DEPLOY_DIR/finance-backend.jar"
+              exit 1
+            fi
+            ls -lh $DEPLOY_DIR/finance-backend.jar
+            
+            # Check if port 8080 is already in use
+            if sudo netstat -tlnp | grep -q ":8080 "; then
+              echo "⚠️  Warning: Port 8080 is already in use"
+              sudo netstat -tlnp | grep ":8080 "
+            fi
+            
+            # Reload systemd daemon to pick up any service file changes
+            sudo systemctl daemon-reload
+            
             # Start the service
+            echo "Starting finance-app service..."
             sudo systemctl start finance-app
             
-            # Wait a bit and check status
+            # Wait for service to start
+            sleep 3
+            
+            # Check service status with detailed output
+            echo "Checking service status..."
+            sudo systemctl status finance-app --no-pager -l || true
+            
+            # Wait a bit more and check again
             sleep 5
-            sudo systemctl status finance-app --no-pager || true
+            
+            # Verify service is active
+            if sudo systemctl is-active --quiet finance-app; then
+              echo "✓ Service is running successfully!"
+            else
+              echo "❌ Service failed to start!"
+              echo ""
+              echo "Service status:"
+              sudo systemctl status finance-app --no-pager -l || true
+              echo ""
+              echo "Recent service logs:"
+              sudo journalctl -u finance-app -n 50 --no-pager || true
+              echo ""
+              echo "Checking for common issues:"
+              echo "1. Java path:"
+              which java || echo "  Java not found in PATH"
+              echo "2. JAR file:"
+              ls -lh $DEPLOY_DIR/finance-backend.jar || echo "  JAR file not found"
+              echo "3. Environment file:"
+              ls -lh /opt/finance-app/.env 2>/dev/null || echo "  .env file not found (optional)"
+              echo "4. Port 8080:"
+              sudo netstat -tlnp | grep ":8080 " || echo "  Port 8080 not in use"
+              exit 1
+            fi
             
             # Cleanup
             rm -rf /tmp/deploy-package.tar.gz $EXTRACT_DIR
@@ -169,7 +226,24 @@ jobs:
               -o StrictHostKeyChecking=no \
               -o ConnectTimeout=10 \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-              'sudo systemctl is-active finance-app && echo "Service is running" || exit 1'
+              'bash -s' << 'VERIFY_EOF'
+            echo "=== Service Status ==="
+            sudo systemctl status finance-app --no-pager -l || true
+            echo ""
+            echo "=== Recent Logs ==="
+            sudo journalctl -u finance-app -n 30 --no-pager || true
+            echo ""
+            echo "=== Port Check ==="
+            sudo netstat -tlnp | grep ":8080 " || echo "Port 8080 not in use"
+            echo ""
+            if sudo systemctl is-active --quiet finance-app; then
+              echo "✓ Service is running successfully!"
+              exit 0
+            else
+              echo "❌ Service is not running!"
+              exit 1
+            fi
+          VERIFY_EOF
 
       - name: Cleanup
         if: always()
