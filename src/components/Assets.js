@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { assetsAPI } from '../services/api';
-import { TrendingUp, Plus, Edit, Trash2, Home, Car, Building2, Wallet, Coins, Gem } from 'lucide-react';
+import { Plus, Edit, Trash2, Home, Car, Building2, Wallet, Coins, Gem } from 'lucide-react';
 import './Assets.css';
 
 const Assets = () => {
