@@ -107,15 +107,6 @@ const Assets = () => {
     }).format(amount || 0);
   };
 
-  const handleExport = async () => {
-    try {
-      await assetsAPI.export();
-    } catch (err) {
-      setError('Failed to export assets');
-      console.error(err);
-    }
-  };
-
   const calculateSummary = () => {
     const totalValue = assets.reduce((sum, asset) => sum + (asset.value || 0), 0);
     // Mock appreciation calculation - in real app, this would come from purchase price

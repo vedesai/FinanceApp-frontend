@@ -136,15 +136,6 @@ const Investments = () => {
     return { totalInvested, totalCurrent, totalGainLoss, totalGainLossPercent };
   };
 
-  const handleExport = async () => {
-    try {
-      await investmentsAPI.export();
-    } catch (err) {
-      setError('Failed to export investments');
-      console.error(err);
-    }
-  };
-
   if (loading) {
     return <div className="loading">Loading investments...</div>;
   }

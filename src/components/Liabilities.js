@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { liabilitiesAPI } from '../services/api';
-import { AlertCircle, DollarSign, TrendingDown, Plus, Edit, Trash2, Home, Car, CreditCard, GraduationCap } from 'lucide-react';
+import { AlertCircle, DollarSign, Plus, Edit, Trash2, Home, Car, CreditCard, GraduationCap } from 'lucide-react';
 import './Liabilities.css';
 
 const Liabilities = () => {
@@ -105,15 +105,6 @@ const Liabilities = () => {
       style: 'currency',
       currency: 'INR',
     }).format(amount || 0);
-  };
-
-  const handleExport = async () => {
-    try {
-      await liabilitiesAPI.export();
-    } catch (err) {
-      setError('Failed to export liabilities');
-      console.error(err);
-    }
   };
 
   const calculateSummary = () => {
