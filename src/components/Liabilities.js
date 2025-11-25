@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { liabilitiesAPI } from '../services/api';
 import { AlertCircle, DollarSign, Plus, Edit, Trash2, Home, Car, CreditCard, GraduationCap } from 'lucide-react';
 import './Liabilities.css';
@@ -16,11 +16,7 @@ const Liabilities = () => {
     description: '',
   });
 
-  useEffect(() => {
-    fetchLiabilities();
-  }, []);
-
-  const fetchLiabilities = async () => {
+  const fetchLiabilities = useCallback(async () => {
     try {
       setLoading(true);
       const response = await liabilitiesAPI.getAll();
@@ -32,7 +28,11 @@ const Liabilities = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchLiabilities();
+  }, [fetchLiabilities]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

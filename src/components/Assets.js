@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { assetsAPI } from '../services/api';
 import { TrendingUp, Plus, Edit, Trash2, Home, Car, Building2, Wallet, Coins, Gem } from 'lucide-react';
 import './Assets.css';
@@ -16,11 +16,7 @@ const Assets = () => {
     description: '',
   });
 
-  useEffect(() => {
-    fetchAssets();
-  }, []);
-
-  const fetchAssets = async () => {
+  const fetchAssets = useCallback(async () => {
     try {
       setLoading(true);
       const response = await assetsAPI.getAll();
@@ -32,7 +28,11 @@ const Assets = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAssets();
+  }, [fetchAssets]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

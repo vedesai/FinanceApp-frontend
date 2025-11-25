@@ -24,9 +24,6 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -40,6 +37,8 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+    fetchDashboardData();
+  }, []);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {

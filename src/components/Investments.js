@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { investmentsAPI } from '../services/api';
 import { DollarSign, TrendingUp, Plus, Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import './Investments.css';
@@ -18,11 +18,7 @@ const Investments = () => {
     maturityDate: '',
   });
 
-  useEffect(() => {
-    fetchInvestments();
-  }, []);
-
-  const fetchInvestments = async () => {
+  const fetchInvestments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await investmentsAPI.getAll();
@@ -34,7 +30,11 @@ const Investments = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchInvestments();
+  }, [fetchInvestments]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
