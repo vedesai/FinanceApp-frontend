@@ -253,9 +253,37 @@ jobs:
             
             # Replace the API_BACKEND_URL placeholder with the actual value
             echo "Replacing API_BACKEND_URL placeholder..."
+            echo "API_BACKEND_URL value: ${API_BACKEND_URL}"
+            
+            # Ensure URL has proper format (must start with http:// or https://)
+            if [ -z "${API_BACKEND_URL}" ]; then
+              echo "⚠️  API_BACKEND_URL is empty, using default: http://localhost:8080"
+              API_BACKEND_URL="http://localhost:8080"
+            fi
+            
+            # Verify URL format
+            if [[ ! "${API_BACKEND_URL}" =~ ^https?:// ]]; then
+              echo "⚠️  API_BACKEND_URL doesn't start with http:// or https://, adding http://"
+              API_BACKEND_URL="http://${API_BACKEND_URL}"
+            fi
+            
+            echo "Using API_BACKEND_URL: ${API_BACKEND_URL}"
             sed "s|API_BACKEND_URL_PLACEHOLDER|${API_BACKEND_URL}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
+            
+            # Verify replacement worked
+            if grep -q "API_BACKEND_URL_PLACEHOLDER" /tmp/nginx-frontend-temp.conf.new; then
+              echo "❌ Placeholder replacement failed! Placeholder still found in file."
+              echo "File contents around proxy_pass:"
+              grep -A 2 -B 2 "proxy_pass" /tmp/nginx-frontend-temp.conf.new || true
+              exit 1
+            fi
+            
             sudo rm -f /tmp/nginx-frontend-temp.conf
             mv /tmp/nginx-frontend-temp.conf.new /tmp/nginx-frontend-temp.conf
+            
+            # Show the proxy_pass line for debugging
+            echo "proxy_pass line after replacement:"
+            grep "proxy_pass" /tmp/nginx-frontend-temp.conf || true
             
             # Copy to final location
             echo "Copying config to $NGINX_CONF..."
@@ -310,7 +338,17 @@ jobs:
             echo "Testing Nginx configuration..."
             sudo nginx -t || {
               echo "❌ Nginx configuration test failed!"
-              echo "Configuration file contents:"
+              echo ""
+              echo "Configuration file contents (showing first 25 lines):"
+              sudo head -n 25 $NGINX_CONF || true
+              echo ""
+              echo "Line 20 (where error occurred):"
+              sudo sed -n '20p' $NGINX_CONF || true
+              echo ""
+              echo "proxy_pass line:"
+              sudo grep -n "proxy_pass" $NGINX_CONF || true
+              echo ""
+              echo "Full configuration file:"
               sudo cat $NGINX_CONF || true
               exit 1
             }
@@ -379,7 +417,7 @@ jobs:
               else
                 echo "❌ Nginx is running but finance-frontend site is not enabled!"
                 exit 1
-            fi
+              fi
             else
               echo "❌ Nginx is not running!"
               exit 1
