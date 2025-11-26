@@ -211,41 +211,70 @@ jobs:
             echo "✓ Default sites removed"
             
             # Create nginx configuration with API backend URL from environment variable
+            echo "Creating nginx configuration file..."
             sudo tee /tmp/nginx-frontend-temp.conf > /dev/null << NGINX_EOF
-            server {
-                listen 80 default_server;
-                listen [::]:80 default_server;
-                server_name _;
-                root /var/www/finance-frontend;
-                index index.html;
-                gzip on;
-                gzip_vary on;
-                gzip_min_length 1024;
-                gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
-                location / {
-                    try_files \$uri \$uri/ /index.html;
-                    add_header Cache-Control "no-cache, no-store, must-revalidate";
-                }
-                location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-                    expires 1y;
-                    add_header Cache-Control "public, immutable";
-                }
-                location /api {
-                    proxy_pass ${API_BACKEND_URL};
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection 'upgrade';
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                    proxy_cache_bypass \$http_upgrade;
-                }
-            }
-            NGINX_EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    root /var/www/finance-frontend;
+    index index.html;
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
+    location / {
+        try_files \$uri \$uri/ /index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    location /api {
+        proxy_pass ${API_BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+NGINX_EOF
+            
+            # Verify temp file was created
+            if [ ! -f /tmp/nginx-frontend-temp.conf ]; then
+              echo "❌ Failed to create temporary nginx config file!"
+              exit 1
+            fi
+            echo "✓ Temporary config file created"
+            
             # Replace the API_BACKEND_URL placeholder with the actual value
+            echo "Replacing API_BACKEND_URL placeholder..."
             sed -i "s|\${API_BACKEND_URL}|${API_BACKEND_URL}|g" /tmp/nginx-frontend-temp.conf
-            sed 's/^            //' /tmp/nginx-frontend-temp.conf | sudo tee $NGINX_CONF > /dev/null
+            
+            # Copy to final location
+            echo "Copying config to $NGINX_CONF..."
+            sudo cp /tmp/nginx-frontend-temp.conf $NGINX_CONF
+            
+            # Verify the file was copied successfully
+            if [ ! -f "$NGINX_CONF" ]; then
+              echo "❌ Failed to copy nginx config to $NGINX_CONF!"
+              exit 1
+            fi
+            
+            # Set proper permissions
+            sudo chmod 644 $NGINX_CONF
+            echo "✓ Nginx configuration file created at $NGINX_CONF"
+            
+            # Verify file contents (first few lines for debugging)
+            echo "Verifying config file contents..."
+            head -n 5 $NGINX_CONF || true
+            
+            # Cleanup temp file
             rm -f /tmp/nginx-frontend-temp.conf
             
             # Enable site (remove old symlink first if it exists)
@@ -264,6 +293,17 @@ jobs:
             # List all enabled sites for debugging
             echo "Enabled Nginx sites:"
             ls -la /etc/nginx/sites-enabled/ || true
+            
+            # Verify config file exists before testing
+            if [ ! -f "$NGINX_CONF" ]; then
+              echo "❌ Nginx config file not found at $NGINX_CONF!"
+              echo "Available config files:"
+              ls -la /etc/nginx/sites-available/ || true
+              exit 1
+            fi
+            
+            echo "Config file exists: $NGINX_CONF"
+            echo "File size: $(stat -c%s $NGINX_CONF 2>/dev/null || stat -f%z $NGINX_CONF 2>/dev/null || echo 'unknown') bytes"
             
             # Test nginx configuration
             echo "Testing Nginx configuration..."
@@ -303,9 +343,17 @@ jobs:
             echo "=== Nginx Status ==="
             sudo systemctl status nginx --no-pager -l || true
             echo ""
+            echo "=== Nginx Config Files (sites-available) ==="
+            ls -la /etc/nginx/sites-available/ | grep finance-frontend || echo "⚠️  finance-frontend config not found in sites-available"
+            echo ""
             echo "=== Enabled Nginx Sites ==="
             ls -la /etc/nginx/sites-enabled/ || true
             echo ""
+            if [ -f /etc/nginx/sites-available/finance-frontend ]; then
+              echo "✓ Finance-frontend config file exists in sites-available"
+            else
+              echo "❌ Finance-frontend config file NOT found in sites-available!"
+            fi
             if [ -L /etc/nginx/sites-enabled/finance-frontend ]; then
               echo "✓ Finance-frontend site is enabled"
             else
