@@ -1,10 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Building2, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Building2, CreditCard, Shield } from 'lucide-react';
 import DashboardComponent from './components/Dashboard';
 import Investments from './components/Investments';
 import Assets from './components/Assets';
 import Liabilities from './components/Liabilities';
+import Insurances from './components/Insurances';
 import './App.css';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
               <NavLink to="/investments" icon={Briefcase}>Investments</NavLink>
               <NavLink to="/assets" icon={Building2}>Assets</NavLink>
               <NavLink to="/liabilities" icon={CreditCard}>Liabilities</NavLink>
+              <NavLink to="/insurances" icon={Shield}>Insurance</NavLink>
             </div>
           </div>
         </nav>
@@ -51,6 +53,7 @@ function App() {
             <Route path="/investments" element={<Investments />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/liabilities" element={<Liabilities />} />
+            <Route path="/insurances" element={<Insurances />} />
           </Routes>
         </main>
       </div>
@@ -71,4 +74,3 @@ function NavLink({ to, icon: Icon, children }) {
 }
 
 export default App;
-
