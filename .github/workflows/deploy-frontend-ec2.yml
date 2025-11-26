@@ -254,6 +254,7 @@ jobs:
             # Replace the API_BACKEND_URL placeholder with the actual value
             echo "Replacing API_BACKEND_URL placeholder..."
             sed "s|API_BACKEND_URL_PLACEHOLDER|${API_BACKEND_URL}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
+            sudo rm -f /tmp/nginx-frontend-temp.conf
             mv /tmp/nginx-frontend-temp.conf.new /tmp/nginx-frontend-temp.conf
             
             # Copy to final location
@@ -378,7 +379,7 @@ jobs:
               else
                 echo "❌ Nginx is running but finance-frontend site is not enabled!"
                 exit 1
-              fi
+            fi
             else
               echo "❌ Nginx is not running!"
               exit 1
