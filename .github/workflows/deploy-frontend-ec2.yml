@@ -137,6 +137,15 @@ jobs:
             sudo chown -R $USER:$USER $BACKUP_DIR
             
             echo "✓ Directories created"
+            
+            # Remove default nginx site if it exists (prevent conflicts)
+            if [ -f /etc/nginx/sites-enabled/default ]; then
+              echo "Removing default Nginx site..."
+              sudo rm -f /etc/nginx/sites-enabled/default
+              echo "✓ Default site removed"
+            fi
+            # Also remove any default-* symlinks
+            sudo rm -f /etc/nginx/sites-enabled/default-* 2>/dev/null || true
           SETUP_EOF
 
       - name: Deploy to EC2
@@ -186,14 +195,20 @@ jobs:
             NGINX_CONF="/etc/nginx/sites-available/finance-frontend"
             NGINX_ENABLED="/etc/nginx/sites-enabled/finance-frontend"
             
-            # Remove default nginx site FIRST to ensure it doesn't interfere
-            echo "Removing default Nginx site..."
-            if [ -f /etc/nginx/sites-enabled/default ]; then
-              sudo rm -f /etc/nginx/sites-enabled/default
-              echo "✓ Default site removed"
-            fi
-            # Also check for default-* symlinks
+            # Remove ALL default nginx sites FIRST to ensure they don't interfere
+            echo "Removing default Nginx sites..."
+            # Remove default site symlink
+            sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+            # Remove any default-* symlinks
             sudo rm -f /etc/nginx/sites-enabled/default-* 2>/dev/null || true
+            # Remove any other enabled sites that might conflict (except our own)
+            for site in /etc/nginx/sites-enabled/*; do
+              if [ -L "$site" ] && [ "$(basename "$site")" != "finance-frontend" ]; then
+                echo "Removing conflicting site: $(basename "$site")"
+                sudo rm -f "$site" 2>/dev/null || true
+              fi
+            done
+            echo "✓ Default sites removed"
             
             # Create nginx configuration with API backend URL from environment variable
             sudo tee /tmp/nginx-frontend-temp.conf > /dev/null << NGINX_EOF
@@ -238,10 +253,24 @@ jobs:
             sudo ln -sf $NGINX_CONF $NGINX_ENABLED
             echo "✓ Finance-frontend site enabled"
             
+            # Verify the symlink was created correctly
+            if [ -L "$NGINX_ENABLED" ] && [ -f "$NGINX_CONF" ]; then
+              echo "✓ Site symlink verified: $NGINX_ENABLED -> $(readlink -f $NGINX_ENABLED)"
+            else
+              echo "❌ Failed to enable site! Symlink check failed."
+              exit 1
+            fi
+            
+            # List all enabled sites for debugging
+            echo "Enabled Nginx sites:"
+            ls -la /etc/nginx/sites-enabled/ || true
+            
             # Test nginx configuration
             echo "Testing Nginx configuration..."
             sudo nginx -t || {
               echo "❌ Nginx configuration test failed!"
+              echo "Configuration file contents:"
+              sudo cat $NGINX_CONF || true
               exit 1
             }
             
@@ -274,6 +303,15 @@ jobs:
             echo "=== Nginx Status ==="
             sudo systemctl status nginx --no-pager -l || true
             echo ""
+            echo "=== Enabled Nginx Sites ==="
+            ls -la /etc/nginx/sites-enabled/ || true
+            echo ""
+            if [ -L /etc/nginx/sites-enabled/finance-frontend ]; then
+              echo "✓ Finance-frontend site is enabled"
+            else
+              echo "❌ Finance-frontend site is NOT enabled!"
+            fi
+            echo ""
             echo "=== Nginx Configuration Test ==="
             sudo nginx -t || true
             echo ""
@@ -284,9 +322,15 @@ jobs:
             ls -lah /var/www/finance-frontend/ | head -10 || true
             echo ""
             if sudo systemctl is-active --quiet nginx; then
-              echo "✓ Nginx is running successfully!"
-              echo "✓ Frontend should be accessible at http://${{ secrets.EC2_HOST }}"
-              exit 0
+              if [ -L /etc/nginx/sites-enabled/finance-frontend ]; then
+                echo "✓ Nginx is running successfully!"
+                echo "✓ Finance-frontend site is enabled!"
+                echo "✓ Frontend should be accessible at http://${{ secrets.EC2_HOST }}"
+                exit 0
+              else
+                echo "❌ Nginx is running but finance-frontend site is not enabled!"
+                exit 1
+              fi
             else
               echo "❌ Nginx is not running!"
               exit 1

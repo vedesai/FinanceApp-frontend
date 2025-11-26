@@ -93,24 +93,52 @@ server {
 }
 NGINX_CONFIG
 
+# Remove ALL default nginx sites FIRST to ensure they don't interfere
+echo "Removing default Nginx sites..."
+# Remove default site symlink
+sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+# Remove any default-* symlinks
+sudo rm -f /etc/nginx/sites-enabled/default-* 2>/dev/null || true
+# Remove any other enabled sites that might conflict (except our own)
+for site in /etc/nginx/sites-enabled/*; do
+  if [ -L "$site" ] && [ "$(basename "$site")" != "finance-frontend" ]; then
+    echo "Removing conflicting site: $(basename "$site")"
+    sudo rm -f "$site" 2>/dev/null || true
+  fi
+done
+echo -e "${GREEN}✓ Default sites removed${NC}"
+
 # Enable site
 sudo ln -sf $NGINX_CONF /etc/nginx/sites-enabled/finance-frontend
 
-# Remove default nginx site if it exists
-if [ -f /etc/nginx/sites-enabled/default ]; then
-    sudo rm /etc/nginx/sites-enabled/default
-    echo -e "${GREEN}✓ Removed default Nginx site${NC}"
+# Verify the symlink was created correctly
+if [ -L /etc/nginx/sites-enabled/finance-frontend ] && [ -f $NGINX_CONF ]; then
+    echo -e "${GREEN}✓ Site symlink verified${NC}"
+else
+    echo -e "${RED}❌ Failed to enable site! Symlink check failed.${NC}"
+    exit 1
 fi
 
 echo ""
-echo "Step 5: Testing Nginx configuration..."
+echo "Step 5: Verifying enabled sites..."
+echo "Enabled Nginx sites:"
+ls -la /etc/nginx/sites-enabled/ || true
+if [ -L /etc/nginx/sites-enabled/finance-frontend ]; then
+    echo -e "${GREEN}✓ Finance-frontend site is enabled${NC}"
+else
+    echo -e "${RED}❌ Finance-frontend site is NOT enabled!${NC}"
+    exit 1
+fi
+
+echo ""
+echo "Step 6: Testing Nginx configuration..."
 sudo nginx -t || {
     echo -e "${RED}❌ Nginx configuration test failed!${NC}"
     exit 1
 }
 
 echo ""
-echo "Step 6: Starting and enabling Nginx..."
+echo "Step 7: Starting and enabling Nginx..."
 sudo systemctl enable nginx
 sudo systemctl restart nginx
 
@@ -124,7 +152,7 @@ else
 fi
 
 echo ""
-echo "Step 7: Configuring firewall (if ufw is active)..."
+echo "Step 8: Configuring firewall (if ufw is active)..."
 if command -v ufw &> /dev/null && sudo ufw status | grep -q "Status: active"; then
     echo "UFW is active. Checking HTTP port..."
     if ! sudo ufw status | grep -q "80/tcp"; then
@@ -148,4 +176,3 @@ echo ""
 echo "To check Nginx status: sudo systemctl status nginx"
 echo "To view Nginx logs: sudo tail -f /var/log/nginx/error.log"
 echo ""
-
