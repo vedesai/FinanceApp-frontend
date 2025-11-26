@@ -320,4 +320,3 @@ For issues and questions, please open an issue in the GitHub repository.
 - Icons: Lucide React icon library
 - Charts: Recharts for data visualization
 - Responsive breakpoints: Mobile-first approach
-
