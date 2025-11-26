@@ -69,10 +69,28 @@ export const liabilitiesAPI = {
   },
 };
 
+// Insurances API
+export const insurancesAPI = {
+  getAll: () => api.get('/insurances'),
+  getById: (id) => api.get(`/insurances/${id}`),
+  create: (data) => api.post('/insurances', data),
+  update: (id, data) => api.put(`/insurances/${id}`, data),
+  delete: (id) => api.delete(`/insurances/${id}`),
+  export: async () => {
+    const response = await api.get('/insurances/export', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'insurances_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
+};
+
 // Dashboard API
 export const dashboardAPI = {
   getSummary: () => api.get('/dashboard'),
 };
 
 export default api;
-
