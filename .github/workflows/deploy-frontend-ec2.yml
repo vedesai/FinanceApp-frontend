@@ -186,10 +186,20 @@ jobs:
             NGINX_CONF="/etc/nginx/sites-available/finance-frontend"
             NGINX_ENABLED="/etc/nginx/sites-enabled/finance-frontend"
             
+            # Remove default nginx site FIRST to ensure it doesn't interfere
+            echo "Removing default Nginx site..."
+            if [ -f /etc/nginx/sites-enabled/default ]; then
+              sudo rm -f /etc/nginx/sites-enabled/default
+              echo "✓ Default site removed"
+            fi
+            # Also check for default-* symlinks
+            sudo rm -f /etc/nginx/sites-enabled/default-* 2>/dev/null || true
+            
             # Create nginx configuration with API backend URL from environment variable
             sudo tee /tmp/nginx-frontend-temp.conf > /dev/null << NGINX_EOF
             server {
-                listen 80;
+                listen 80 default_server;
+                listen [::]:80 default_server;
                 server_name _;
                 root /var/www/finance-frontend;
                 index index.html;
@@ -223,13 +233,10 @@ jobs:
             sed 's/^            //' /tmp/nginx-frontend-temp.conf | sudo tee $NGINX_CONF > /dev/null
             rm -f /tmp/nginx-frontend-temp.conf
             
-            # Enable site
+            # Enable site (remove old symlink first if it exists)
+            sudo rm -f $NGINX_ENABLED
             sudo ln -sf $NGINX_CONF $NGINX_ENABLED
-            
-            # Remove default nginx site if it exists
-            if [ -f /etc/nginx/sites-enabled/default ]; then
-              sudo rm /etc/nginx/sites-enabled/default
-            fi
+            echo "✓ Finance-frontend site enabled"
             
             # Test nginx configuration
             echo "Testing Nginx configuration..."
@@ -262,7 +269,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
               -o StrictHostKeyChecking=no \
               -o ConnectTimeout=10 \
-              ${{ secrets.EC2_USER }}@${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+              ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
               'bash -s' << 'VERIFY_EOF'
             echo "=== Nginx Status ==="
             sudo systemctl status nginx --no-pager -l || true
