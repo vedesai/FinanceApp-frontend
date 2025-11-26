@@ -140,6 +140,8 @@ jobs:
           SETUP_EOF
 
       - name: Deploy to EC2
+        env:
+          API_BACKEND_URL: ${{ secrets.API_BACKEND_URL || 'http://localhost:8080' }}
         run: |
           scp -i ~/.ssh/deploy_key \
               -o StrictHostKeyChecking=no \
@@ -151,7 +153,7 @@ jobs:
               -o StrictHostKeyChecking=no \
               -o ConnectTimeout=10 \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-              'bash -s' << 'DEPLOY_EOF'
+              API_BACKEND_URL="$API_BACKEND_URL" 'bash -s' << 'DEPLOY_EOF'
             set -e
             FRONTEND_DIR="/var/www/finance-frontend"
             BACKUP_DIR="/var/www/finance-frontend/backups"
@@ -184,8 +186,8 @@ jobs:
             NGINX_CONF="/etc/nginx/sites-available/finance-frontend"
             NGINX_ENABLED="/etc/nginx/sites-enabled/finance-frontend"
             
-            # Create nginx configuration
-            sudo tee /tmp/nginx-frontend-temp.conf > /dev/null << 'NGINX_EOF'
+            # Create nginx configuration with API backend URL from environment variable
+            sudo tee /tmp/nginx-frontend-temp.conf > /dev/null << NGINX_EOF
             server {
                 listen 80;
                 server_name _;
@@ -196,7 +198,7 @@ jobs:
                 gzip_min_length 1024;
                 gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
                 location / {
-                    try_files $uri $uri/ /index.html;
+                    try_files \$uri \$uri/ /index.html;
                     add_header Cache-Control "no-cache, no-store, must-revalidate";
                 }
                 location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
@@ -204,18 +206,20 @@ jobs:
                     add_header Cache-Control "public, immutable";
                 }
                 location /api {
-                    proxy_pass http://ec2-3-233-226-50.compute-1.amazonaws.com:8080;
+                    proxy_pass ${API_BACKEND_URL};
                     proxy_http_version 1.1;
-                    proxy_set_header Upgrade $http_upgrade;
+                    proxy_set_header Upgrade \$http_upgrade;
                     proxy_set_header Connection 'upgrade';
-                    proxy_set_header Host $host;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                    proxy_cache_bypass $http_upgrade;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                    proxy_cache_bypass \$http_upgrade;
                 }
             }
             NGINX_EOF
+            # Replace the API_BACKEND_URL placeholder with the actual value
+            sed -i "s|\${API_BACKEND_URL}|${API_BACKEND_URL}|g" /tmp/nginx-frontend-temp.conf
             sed 's/^            //' /tmp/nginx-frontend-temp.conf | sudo tee $NGINX_CONF > /dev/null
             rm -f /tmp/nginx-frontend-temp.conf
             
@@ -258,7 +262,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
               -o StrictHostKeyChecking=no \
               -o ConnectTimeout=10 \
-              ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+              ${{ secrets.EC2_USER }}@${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
               'bash -s' << 'VERIFY_EOF'
             echo "=== Nginx Status ==="
             sudo systemctl status nginx --no-pager -l || true
