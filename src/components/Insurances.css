@@ -1,0 +1,422 @@
+.insurances {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 0;
+}
+
+/* Summary Cards */
+.insurances-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.summary-card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.summary-card-primary {
+  background: #eff6ff;
+  border-color: #bedbff;
+}
+
+.summary-card-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #45556c;
+  letter-spacing: -0.3125px;
+}
+
+.summary-card-title-primary {
+  color: #1447e6;
+}
+
+.summary-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-card-value-large {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+}
+
+.summary-card-value-primary {
+  color: #1c398e;
+}
+
+.summary-card-subtitle {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #45556c;
+  letter-spacing: -0.3125px;
+}
+
+.summary-card-subtitle-primary {
+  color: #1447e6;
+}
+
+/* Coverage by Type */
+.coverage-by-type-card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.coverage-by-type-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 16px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+}
+
+.coverage-by-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.coverage-type-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 17px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.coverage-type-label {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+}
+
+.coverage-type-value {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+}
+
+/* Header Actions */
+.insurances-header-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #030213;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  height: 36px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-add:hover {
+  opacity: 0.9;
+}
+
+/* Form */
+.insurance-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.insurance-form h2 {
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #34495e;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2980b9;
+}
+
+.btn-secondary {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #7f8c8d;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* Insurance Cards */
+.insurances-list {
+  margin-top: 0;
+}
+
+.insurances-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.insurance-card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.insurance-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.insurance-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.insurance-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172b;
+  flex-shrink: 0;
+}
+
+.insurance-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insurance-card-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+}
+
+.insurance-badge {
+  background: #eceef2;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 3px 9px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: #030213;
+  width: fit-content;
+}
+
+.insurance-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.insurance-details-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.insurance-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.insurance-detail-label {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #45556c;
+  letter-spacing: -0.3125px;
+}
+
+.insurance-detail-value {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #0f172b;
+  letter-spacing: -0.3125px;
+}
+
+.insurance-detail-subtitle {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #45556c;
+  letter-spacing: -0.3125px;
+}
+
+.insurance-card-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  background: white;
+  border-radius: 8px;
+  grid-column: 1 / -1;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+}
+
+.error {
+  color: #e74c3c;
+}
+
+@media (max-width: 1200px) {
+  .insurances-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .coverage-by-type-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .insurances-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .insurances-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .coverage-by-type-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .insurance-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
