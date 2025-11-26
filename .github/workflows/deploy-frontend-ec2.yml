@@ -342,8 +342,8 @@ jobs:
               echo "Configuration file contents (showing first 25 lines):"
               sudo head -n 25 $NGINX_CONF || true
               echo ""
-              echo "Line 23 (where error occurred):"
-              sudo sed -n '23p' $NGINX_CONF || true
+              echo "Line 20 (where error occurred):"
+              sudo sed -n '20p' $NGINX_CONF || true
               echo ""
               echo "proxy_pass line:"
               sudo grep -n "proxy_pass" $NGINX_CONF || true
@@ -353,16 +353,21 @@ jobs:
               exit 1
             }
             
-            # Reload nginx
-            echo "Reloading Nginx..."
-            sudo systemctl reload nginx || sudo systemctl restart nginx
+            # Restart nginx to ensure it picks up the new configuration and files
+            echo "Restarting Nginx..."
+            sudo systemctl restart nginx
+            
+            # Wait a moment for nginx to fully restart
+            sleep 3
             
             # Verify nginx is running
             if sudo systemctl is-active --quiet nginx; then
-              echo "✓ Nginx is running successfully!"
-            else
-              echo "❌ Nginx failed to start!"
+              echo "✓ Nginx restarted and running successfully!"
               sudo systemctl status nginx --no-pager -l || true
+            else
+              echo "❌ Nginx failed to restart!"
+              sudo systemctl status nginx --no-pager -l || true
+              sudo journalctl -u nginx -n 50 --no-pager || true
               exit 1
             fi
             
