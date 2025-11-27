@@ -146,32 +146,31 @@ jobs:
             # Generate self-signed SSL certificate if it doesn't exist
             if [ ! -f $SSL_DIR/finance-frontend.crt ] || [ ! -f $SSL_DIR/finance-frontend.key ]; then
               echo "Generating self-signed SSL certificate..."
-              # Create openssl config file for certificate generation
+              # Create openssl config file using printf to avoid nested heredoc issues
               SSL_CONFIG="/tmp/ssl-config.cnf"
-              cat > $SSL_CONFIG << 'SSL_EOF'
-[req]
-distinguished_name = req_distinguished_name
-req_extensions = v3_req
-prompt = no
-
-[req_distinguished_name]
-C = US
-ST = State
-L = City
-O = FinanceApp
-CN = financeapp-frontend
-
-[v3_req]
-keyUsage = keyEncipherment, dataEncipherment
-extendedKeyUsage = serverAuth
-subjectAltName = @alt_names
-
-[alt_names]
-DNS.1 = *
-DNS.2 = localhost
-IP.1 = 127.0.0.1
-IP.2 = ::1
-SSL_EOF
+              printf '%s\n' \
+                '[req]' \
+                'distinguished_name = req_distinguished_name' \
+                'req_extensions = v3_req' \
+                'prompt = no' \
+                '' \
+                '[req_distinguished_name]' \
+                'C = US' \
+                'ST = State' \
+                'L = City' \
+                'O = FinanceApp' \
+                'CN = financeapp-frontend' \
+                '' \
+                '[v3_req]' \
+                'keyUsage = keyEncipherment, dataEncipherment' \
+                'extendedKeyUsage = serverAuth' \
+                'subjectAltName = @alt_names' \
+                '' \
+                '[alt_names]' \
+                'DNS.1 = *' \
+                'DNS.2 = localhost' \
+                'IP.1 = 127.0.0.1' \
+                'IP.2 = ::1' > $SSL_CONFIG
               sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
                 -keyout $SSL_DIR/finance-frontend.key \
                 -out $SSL_DIR/finance-frontend.crt \
