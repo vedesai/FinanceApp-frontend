@@ -69,7 +69,7 @@ export const liabilitiesAPI = {
   },
 };
 
-// Insurances API
+// Insurances API - Insurance management endpoints
 export const insurancesAPI = {
   getAll: () => api.get('/insurances'),
   getById: (id) => api.get(`/insurances/${id}`),
