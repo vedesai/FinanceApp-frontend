@@ -268,11 +268,10 @@ jobs:
             fi
 
             echo "Using API_BACKEND_URL: ${API_BACKEND_URL}"
-            # Append /api to the backend URL for proxy_pass to preserve the /api path
-            # Remove trailing slash if present, then append /api
-            BACKEND_URL_WITH_API="${API_BACKEND_URL%/}/api"
-            echo "Backend URL with /api: ${BACKEND_URL_WITH_API}"
-            sed "s|API_BACKEND_URL_PLACEHOLDER|${BACKEND_URL_WITH_API}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
+            # Remove trailing slash if present (the template already appends /api)
+            BACKEND_URL_CLEAN="${API_BACKEND_URL%/}"
+            echo "Backend URL (clean): ${BACKEND_URL_CLEAN}"
+            sed "s|API_BACKEND_URL_PLACEHOLDER|${BACKEND_URL_CLEAN}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
 
             # Verify replacement worked
             if grep -q "API_BACKEND_URL_PLACEHOLDER" /tmp/nginx-frontend-temp.conf.new; then
