@@ -14,6 +14,7 @@ const Assets = () => {
     assetType: '',
     value: '',
     description: '',
+    purchasedDate: '',
   });
 
   const fetchAssets = useCallback(async () => {
@@ -50,6 +51,7 @@ const Assets = () => {
         assetType: formData.assetType,
         value: parseFloat(formData.value),
         description: formData.description || null,
+        purchasedDate: formData.purchasedDate || null,
       };
 
       if (editingAsset) {
@@ -73,6 +75,7 @@ const Assets = () => {
       assetType: asset.assetType,
       value: asset.value.toString(),
       description: asset.description || '',
+      purchasedDate: asset.purchasedDate || '',
     });
     setShowForm(true);
   };
@@ -95,6 +98,7 @@ const Assets = () => {
       assetType: '',
       value: '',
       description: '',
+      purchasedDate: '',
     });
     setEditingAsset(null);
     setShowForm(false);
@@ -105,6 +109,20 @@ const Assets = () => {
       style: 'currency',
       currency: 'INR',
     }).format(amount || 0);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not set';
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
   };
 
   const calculateSummary = () => {
@@ -244,6 +262,16 @@ const Assets = () => {
               placeholder="Optional description"
             />
           </div>
+          <div className="form-group">
+            <label>Purchased Date</label>
+            <input
+              type="date"
+              name="purchasedDate"
+              value={formData.purchasedDate}
+              onChange={handleInputChange}
+              placeholder="Select purchase date"
+            />
+          </div>
           <div className="form-actions">
             <button type="submit" className="btn btn-primary">
               {editingAsset ? 'Update' : 'Create'}
@@ -279,7 +307,7 @@ const Assets = () => {
                     </div>
                     <div className="asset-detail">
                       <div className="asset-detail-label">Purchase Date</div>
-                      <div className="asset-detail-value-secondary">January 1, 2020</div>
+                      <div className="asset-detail-value-secondary">{formatDate(asset.purchasedDate)}</div>
                     </div>
                     <div className="asset-detail">
                       <div className="asset-detail-label">Appreciation</div>
@@ -315,4 +343,3 @@ const Assets = () => {
 };
 
 export default Assets;
-
