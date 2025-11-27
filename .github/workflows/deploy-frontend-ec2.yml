@@ -138,26 +138,6 @@ jobs:
             
             echo "✓ Directories created"
             
-            # Create SSL directory for certificates
-            SSL_DIR="/etc/nginx/ssl"
-            sudo mkdir -p $SSL_DIR
-            sudo chmod 700 $SSL_DIR
-            
-            # Generate self-signed SSL certificate if it doesn't exist
-            if [ ! -f $SSL_DIR/finance-frontend.crt ] || [ ! -f $SSL_DIR/finance-frontend.key ]; then
-              echo "Generating self-signed SSL certificate..."
-              sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout $SSL_DIR/finance-frontend.key \
-                -out $SSL_DIR/finance-frontend.crt \
-                -subj "/C=US/ST=State/L=City/O=FinanceApp/CN=financeapp-frontend" \
-                -addext "subjectAltName=DNS:*,IP:*"
-              sudo chmod 600 $SSL_DIR/finance-frontend.key
-              sudo chmod 644 $SSL_DIR/finance-frontend.crt
-              echo "✓ Self-signed SSL certificate generated"
-            else
-              echo "✓ SSL certificate already exists"
-            fi
-            
             # Remove default nginx site if it exists (prevent conflicts)
             if [ -f /etc/nginx/sites-enabled/default ]; then
               echo "Removing default Nginx site..."
@@ -233,27 +213,13 @@ jobs:
             # Create nginx configuration with API backend URL from environment variable
             echo "Creating nginx configuration file..."
             printf '%s\n' \
-              '# HTTP server - redirect to HTTPS' \
+              '# HTTP server' \
               'server {' \
               '    listen 80 default_server;' \
               '    listen [::]:80 default_server;' \
               '    server_name _;' \
-              '    return 301 https://$host$request_uri;' \
-              '}' \
-              '' \
-              '# HTTPS server' \
-              'server {' \
-              '    listen 443 ssl http2 default_server;' \
-              '    listen [::]:443 ssl http2 default_server;' \
-              '    server_name _;' \
               '    root /var/www/finance-frontend;' \
               '    index index.html;' \
-              '    ssl_certificate /etc/nginx/ssl/finance-frontend.crt;' \
-              '    ssl_certificate_key /etc/nginx/ssl/finance-frontend.key;' \
-              '    ssl_protocols TLSv1.2 TLSv1.3;' \
-              '    ssl_ciphers HIGH:!aNULL:!MD5;' \
-              '    ssl_prefer_server_ciphers on;' \
-              '    ssl_verify_client off;' \
               '    gzip on;' \
               '    gzip_vary on;' \
               '    gzip_min_length 1024;' \
@@ -447,15 +413,6 @@ jobs:
             echo ""
             echo "=== Port Check ==="
             sudo netstat -tlnp | grep ":80 " || echo "Port 80 not in use"
-            sudo netstat -tlnp | grep ":443 " || echo "Port 443 not in use"
-            echo ""
-            echo "=== SSL Certificate Check ==="
-            if [ -f /etc/nginx/ssl/finance-frontend.crt ] && [ -f /etc/nginx/ssl/finance-frontend.key ]; then
-              echo "✓ SSL certificates exist"
-              ls -lh /etc/nginx/ssl/finance-frontend.* || true
-            else
-              echo "⚠️  SSL certificates not found"
-            fi
             echo ""
             echo "=== Frontend Files ==="
             ls -lah /var/www/finance-frontend/ | head -10 || true
@@ -465,11 +422,7 @@ jobs:
                 echo "✓ Nginx is running successfully!"
                 echo "✓ Finance-frontend site is enabled!"
                 echo "✓ Frontend should be accessible at:"
-                echo "  - HTTPS: https://${{ secrets.EC2_HOST }}"
-                echo "  - HTTP: http://${{ secrets.EC2_HOST }} (redirects to HTTPS)"
-                echo ""
-                echo "⚠️  Note: Using self-signed certificate. Browsers will show a security warning."
-                echo "   You can proceed by clicking 'Advanced' and 'Proceed to site'."
+                echo "  - HTTP: http://${{ secrets.EC2_HOST }}"
                 exit 0
               else
                 echo "❌ Nginx is running but finance-frontend site is not enabled!"
