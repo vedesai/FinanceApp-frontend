@@ -210,6 +210,30 @@ jobs:
             done
             echo "✓ Default sites removed"
             
+            # Prepare backend URL for proxy_pass
+            echo "Preparing backend URL..."
+            echo "API_BACKEND_URL value: ${API_BACKEND_URL}"
+            
+            # Ensure URL has proper format (must start with http:// or https://)
+            if [ -z "${API_BACKEND_URL}" ]; then
+              echo "⚠️  API_BACKEND_URL is empty, using default: http://localhost:8080"
+              API_BACKEND_URL="http://localhost:8080"
+            fi
+            
+            # Verify URL format
+            if [[ ! "${API_BACKEND_URL}" =~ ^https?:// ]]; then
+              echo "⚠️  API_BACKEND_URL doesn't start with http:// or https://, adding http://"
+              API_BACKEND_URL="http://${API_BACKEND_URL}"
+            fi
+            
+            # Remove trailing slash and /api if present, then add /api
+            # This ensures we always have exactly one /api in the URL
+            BACKEND_URL_CLEAN="${API_BACKEND_URL%/}"
+            BACKEND_URL_CLEAN="${BACKEND_URL_CLEAN%/api}"
+            BACKEND_URL_FINAL="${BACKEND_URL_CLEAN}/api"
+            
+            echo "Using backend URL: ${BACKEND_URL_FINAL}"
+            
             # Create nginx configuration with API backend URL from environment variable
             echo "Creating nginx configuration file..."
             printf '%s\n' \
@@ -232,7 +256,7 @@ jobs:
               '        add_header Cache-Control "public, immutable";' \
               '    }' \
               '    location /api {' \
-              '        proxy_pass API_BACKEND_URL_PLACEHOLDER/api;' \
+              '        proxy_pass API_BACKEND_URL_PLACEHOLDER/;' \
               '        proxy_http_version 1.1;' \
               '        proxy_set_header Upgrade $http_upgrade;' \
               '        proxy_set_header Connection "upgrade";' \
@@ -253,25 +277,7 @@ jobs:
             
             # Replace the API_BACKEND_URL placeholder with the actual value
             echo "Replacing API_BACKEND_URL placeholder..."
-            echo "API_BACKEND_URL value: ${API_BACKEND_URL}"
-            
-            # Ensure URL has proper format (must start with http:// or https://)
-            if [ -z "${API_BACKEND_URL}" ]; then
-              echo "⚠️  API_BACKEND_URL is empty, using default: http://localhost:8080"
-              API_BACKEND_URL="http://localhost:8080"
-            fi
-            
-            # Verify URL format
-            if [[ ! "${API_BACKEND_URL}" =~ ^https?:// ]]; then
-              echo "⚠️  API_BACKEND_URL doesn't start with http:// or https://, adding http://"
-              API_BACKEND_URL="http://${API_BACKEND_URL}"
-            fi
-            
-            echo "Using API_BACKEND_URL: ${API_BACKEND_URL}"
-            # Append /api to the backend URL for proxy_pass to preserve the /api path
-            BACKEND_URL_WITH_API="${API_BACKEND_URL%/}/api"
-            echo "Backend URL with /api: ${BACKEND_URL_WITH_API}"
-            sed "s|API_BACKEND_URL_PLACEHOLDER|${BACKEND_URL_WITH_API}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
+            sed "s|API_BACKEND_URL_PLACEHOLDER|${BACKEND_URL_FINAL}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
             
             # Verify replacement worked
             if grep -q "API_BACKEND_URL_PLACEHOLDER" /tmp/nginx-frontend-temp.conf.new; then
