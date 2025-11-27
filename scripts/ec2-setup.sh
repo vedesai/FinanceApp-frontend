@@ -49,80 +49,16 @@ echo "  - Frontend: $FRONTEND_DIR"
 echo "  - Backups: $BACKUP_DIR"
 
 echo ""
-echo "Step 4: Setting up SSL certificates..."
-SSL_DIR="/etc/nginx/ssl"
-sudo mkdir -p $SSL_DIR
-sudo chmod 700 $SSL_DIR
-
-# Generate self-signed SSL certificate if it doesn't exist
-if [ ! -f $SSL_DIR/finance-frontend.crt ] || [ ! -f $SSL_DIR/finance-frontend.key ]; then
-    echo "Generating self-signed SSL certificate..."
-    # Create openssl config file for certificate generation
-    SSL_CONFIG="/tmp/ssl-config.cnf"
-    cat > $SSL_CONFIG << 'SSL_EOF'
-[req]
-distinguished_name = req_distinguished_name
-req_extensions = v3_req
-prompt = no
-
-[req_distinguished_name]
-C = US
-ST = State
-L = City
-O = FinanceApp
-CN = financeapp-frontend
-
-[v3_req]
-keyUsage = keyEncipherment, dataEncipherment
-extendedKeyUsage = serverAuth
-subjectAltName = @alt_names
-
-[alt_names]
-DNS.1 = *
-DNS.2 = localhost
-IP.1 = 127.0.0.1
-IP.2 = ::1
-SSL_EOF
-    sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-        -keyout $SSL_DIR/finance-frontend.key \
-        -out $SSL_DIR/finance-frontend.crt \
-        -config $SSL_CONFIG \
-        -extensions v3_req
-    rm -f $SSL_CONFIG
-    sudo chmod 600 $SSL_DIR/finance-frontend.key
-    sudo chmod 644 $SSL_DIR/finance-frontend.crt
-    echo -e "${GREEN}✓ Self-signed SSL certificate generated${NC}"
-else
-    echo -e "${GREEN}✓ SSL certificate already exists${NC}"
-fi
-
-echo ""
-echo "Step 5: Configuring Nginx..."
+echo "Step 4: Configuring Nginx..."
 NGINX_CONF="/etc/nginx/sites-available/finance-frontend"
 
-# Create nginx configuration with HTTPS
+# Create nginx configuration with HTTP only
 sudo tee $NGINX_CONF > /dev/null << 'NGINX_CONFIG'
-# HTTP server - redirect to HTTPS
 server {
     listen 80;
     server_name _;
-    return 301 https://$host$request_uri;
-}
-
-# HTTPS server
-server {
-    listen 443 ssl http2;
-    server_name _;
     root /var/www/finance-frontend;
     index index.html;
-    
-    # SSL configuration
-    ssl_certificate /etc/nginx/ssl/finance-frontend.crt;
-    ssl_certificate_key /etc/nginx/ssl/finance-frontend.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-    ssl_verify_client off;
     
     # Gzip compression
     gzip on;
@@ -184,7 +120,7 @@ else
 fi
 
 echo ""
-echo "Step 6: Verifying enabled sites..."
+echo "Step 5: Verifying enabled sites..."
 echo "Enabled Nginx sites:"
 ls -la /etc/nginx/sites-enabled/ || true
 if [ -L /etc/nginx/sites-enabled/finance-frontend ]; then
@@ -195,14 +131,14 @@ else
 fi
 
 echo ""
-echo "Step 7: Testing Nginx configuration..."
+echo "Step 6: Testing Nginx configuration..."
 sudo nginx -t || {
     echo -e "${RED}❌ Nginx configuration test failed!${NC}"
     exit 1
 }
 
 echo ""
-echo "Step 8: Starting and enabling Nginx..."
+echo "Step 7: Starting and enabling Nginx..."
 sudo systemctl enable nginx
 sudo systemctl restart nginx
 
@@ -216,20 +152,14 @@ else
 fi
 
 echo ""
-echo "Step 9: Configuring firewall (if ufw is active)..."
+echo "Step 8: Configuring firewall (if ufw is active)..."
 if command -v ufw &> /dev/null && sudo ufw status | grep -q "Status: active"; then
-    echo "UFW is active. Checking ports..."
+    echo "UFW is active. Checking HTTP port..."
     if ! sudo ufw status | grep -q "80/tcp"; then
         echo -e "${YELLOW}⚠ HTTP port 80 is not open in UFW${NC}"
         echo "To allow HTTP traffic, run: sudo ufw allow 80/tcp"
     else
         echo -e "${GREEN}✓ HTTP port 80 is already allowed${NC}"
-    fi
-    if ! sudo ufw status | grep -q "443/tcp"; then
-        echo -e "${YELLOW}⚠ HTTPS port 443 is not open in UFW${NC}"
-        echo "To allow HTTPS traffic, run: sudo ufw allow 443/tcp"
-    else
-        echo -e "${GREEN}✓ HTTPS port 443 is already allowed${NC}"
     fi
 fi
 
@@ -239,14 +169,9 @@ echo -e "${GREEN}Setup completed successfully!${NC}"
 echo "========================================="
 echo ""
 echo "Next steps:"
-echo "1. Ensure EC2 security group allows inbound HTTP (port 80) and HTTPS (port 443) traffic"
+echo "1. Ensure EC2 security group allows inbound HTTP (port 80) traffic"
 echo "2. Deploy frontend using GitHub Actions workflow"
-echo "3. Access frontend at:"
-echo "   - HTTPS: https://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo 'YOUR_EC2_IP')"
-echo "   - HTTP: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo 'YOUR_EC2_IP') (redirects to HTTPS)"
-echo ""
-echo "⚠️  Note: Using self-signed certificate. Browsers will show a security warning."
-echo "   You can proceed by clicking 'Advanced' and 'Proceed to site'."
+echo "3. Access frontend at: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo 'YOUR_EC2_IP')"
 echo ""
 echo "To check Nginx status: sudo systemctl status nginx"
 echo "To view Nginx logs: sudo tail -f /var/log/nginx/error.log"
