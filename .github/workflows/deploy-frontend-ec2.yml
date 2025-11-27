@@ -233,7 +233,7 @@ jobs:
               '        add_header Cache-Control "public, immutable";' \
               '    }' \
               '    location /api {' \
-              '        proxy_pass API_BACKEND_URL_PLACEHOLDER/api;' \
+              '        proxy_pass API_BACKEND_URL_PLACEHOLDER;' \
               '        proxy_http_version 1.1;' \
               '        proxy_set_header Upgrade $http_upgrade;' \
               '        proxy_set_header Connection "upgrade";' \
@@ -269,10 +269,13 @@ jobs:
             fi
             
             echo "Using API_BACKEND_URL: ${API_BACKEND_URL}"
-            # Append /api to the backend URL for proxy_pass to preserve the /api path
-            BACKEND_URL_WITH_API="${API_BACKEND_URL%/}/api"
-            echo "Backend URL with /api: ${BACKEND_URL_WITH_API}"
-            sed "s|API_BACKEND_URL_PLACEHOLDER|${BACKEND_URL_WITH_API}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
+            # Ensure backend URL ends with /api (remove trailing slash first, then append /api if not present)
+            BACKEND_URL="${API_BACKEND_URL%/}"
+            if [[ ! "${BACKEND_URL}" =~ /api$ ]]; then
+              BACKEND_URL="${BACKEND_URL}/api"
+            fi
+            echo "Backend URL for proxy_pass: ${BACKEND_URL}"
+            sed "s|API_BACKEND_URL_PLACEHOLDER|${BACKEND_URL}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
             
             # Verify replacement worked
             if grep -q "API_BACKEND_URL_PLACEHOLDER" /tmp/nginx-frontend-temp.conf.new; then
