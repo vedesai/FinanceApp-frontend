@@ -14,7 +14,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -65,18 +65,18 @@ jobs:
           # Add EC2 host to known_hosts
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>&1 || true
           chmod 644 ~/.ssh/known_hosts
-          
+
           # Debug: Verify key format (without exposing the key)
           echo "Checking SSH key format..."
           head -n 1 ~/.ssh/deploy_key | grep -q "BEGIN" && echo "✓ Key header found" || echo "⚠ Key header missing"
           tail -n 1 ~/.ssh/deploy_key | grep -q "END" && echo "✓ Key footer found" || echo "⚠ Key footer missing"
-          
+
       - name: Test SSH Connection
         run: |
           echo "Testing SSH connection to EC2..."
           echo "EC2_HOST: ${{ secrets.EC2_HOST }}"
           echo "EC2_USER: ${{ secrets.EC2_USER }}"
-          
+
           # Test network connectivity first
           echo "Testing network connectivity..."
           if ping -c 3 ${{ secrets.EC2_HOST }} 2>&1 | grep -q "0 received"; then
@@ -84,7 +84,7 @@ jobs:
           else
             echo "✓ Network connectivity OK"
           fi
-          
+
           # Test SSH connection
           ssh -i ~/.ssh/deploy_key \
               -o StrictHostKeyChecking=no \
@@ -114,7 +114,7 @@ jobs:
               'bash -s' << 'SETUP_EOF'
             set -e
             echo "Setting up Nginx for frontend deployment..."
-            
+
             # Check if nginx is installed
             if ! command -v nginx &> /dev/null; then
               echo "Installing Nginx..."
@@ -125,19 +125,19 @@ jobs:
               echo "✓ Nginx is already installed"
               nginx -v
             fi
-            
+
             # Create deployment directory
             FRONTEND_DIR="/var/www/finance-frontend"
             sudo mkdir -p $FRONTEND_DIR
             sudo chown -R $USER:$USER $FRONTEND_DIR
-            
+
             # Create backup directory
             BACKUP_DIR="/var/www/finance-frontend/backups"
             sudo mkdir -p $BACKUP_DIR
             sudo chown -R $USER:$USER $BACKUP_DIR
-            
+
             echo "✓ Directories created"
-            
+
             # Remove default nginx site if it exists (prevent conflicts)
             if [ -f /etc/nginx/sites-enabled/default ]; then
               echo "Removing default Nginx site..."
@@ -157,7 +157,7 @@ jobs:
               -o ConnectTimeout=10 \
               deploy-package.tar.gz \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/
-          
+
           ssh -i ~/.ssh/deploy_key \
               -o StrictHostKeyChecking=no \
               -o ConnectTimeout=10 \
@@ -167,34 +167,34 @@ jobs:
             FRONTEND_DIR="/var/www/finance-frontend"
             BACKUP_DIR="/var/www/finance-frontend/backups"
             TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-            
+
             # Extract deployment package
             EXTRACT_DIR="/tmp/frontend-deploy-$(date +%s)"
             mkdir -p $EXTRACT_DIR
             cd $EXTRACT_DIR
             tar -xzf /tmp/deploy-package.tar.gz
-            
+
             # Backup existing deployment if it exists
             if [ -d "$FRONTEND_DIR/build" ] || [ -f "$FRONTEND_DIR/index.html" ]; then
               echo "Backing up existing deployment..."
               sudo tar -czf $BACKUP_DIR/frontend-$TIMESTAMP.tar.gz -C $FRONTEND_DIR . 2>/dev/null || true
             fi
-            
+
             # Remove old files
             echo "Removing old files..."
             sudo rm -rf $FRONTEND_DIR/*
-            
+
             # Copy new files
             echo "Copying new files..."
             sudo cp -r $EXTRACT_DIR/* $FRONTEND_DIR/
             sudo chown -R www-data:www-data $FRONTEND_DIR
             sudo chmod -R 755 $FRONTEND_DIR
-            
+
             # Configure Nginx
             echo "Configuring Nginx..."
             NGINX_CONF="/etc/nginx/sites-available/finance-frontend"
             NGINX_ENABLED="/etc/nginx/sites-enabled/finance-frontend"
-            
+
             # Remove ALL default nginx sites FIRST to ensure they don't interfere
             echo "Removing default Nginx sites..."
             # Remove default site symlink
@@ -209,7 +209,7 @@ jobs:
               fi
             done
             echo "✓ Default sites removed"
-            
+
             # Create nginx configuration with API backend URL from environment variable
             echo "Creating nginx configuration file..."
             printf '%s\n' \
@@ -232,7 +232,7 @@ jobs:
               '        add_header Cache-Control "public, immutable";' \
               '    }' \
               '    location /api {' \
-              '        proxy_pass API_BACKEND_URL_PLACEHOLDER;' \
+              '        proxy_pass API_BACKEND_URL_PLACEHOLDER/api;' \
               '        proxy_http_version 1.1;' \
               '        proxy_set_header Upgrade $http_upgrade;' \
               '        proxy_set_header Connection "upgrade";' \
@@ -243,33 +243,37 @@ jobs:
               '        proxy_cache_bypass $http_upgrade;' \
               '    }' \
               '}' | sudo tee /tmp/nginx-frontend-temp.conf > /dev/null
-            
+
             # Verify temp file was created
             if [ ! -f /tmp/nginx-frontend-temp.conf ]; then
               echo "❌ Failed to create temporary nginx config file!"
               exit 1
             fi
             echo "✓ Temporary config file created"
-            
+
             # Replace the API_BACKEND_URL placeholder with the actual value
             echo "Replacing API_BACKEND_URL placeholder..."
             echo "API_BACKEND_URL value: ${API_BACKEND_URL}"
-            
+
             # Ensure URL has proper format (must start with http:// or https://)
             if [ -z "${API_BACKEND_URL}" ]; then
               echo "⚠️  API_BACKEND_URL is empty, using default: http://localhost:8080"
               API_BACKEND_URL="http://localhost:8080"
             fi
-            
+
             # Verify URL format
             if [[ ! "${API_BACKEND_URL}" =~ ^https?:// ]]; then
               echo "⚠️  API_BACKEND_URL doesn't start with http:// or https://, adding http://"
               API_BACKEND_URL="http://${API_BACKEND_URL}"
             fi
-            
+
             echo "Using API_BACKEND_URL: ${API_BACKEND_URL}"
-            sed "s|API_BACKEND_URL_PLACEHOLDER|${API_BACKEND_URL}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
-            
+            # Append /api to the backend URL for proxy_pass to preserve the /api path
+            # Remove trailing slash if present, then append /api
+            BACKEND_URL_WITH_API="${API_BACKEND_URL%/}/api"
+            echo "Backend URL with /api: ${BACKEND_URL_WITH_API}"
+            sed "s|API_BACKEND_URL_PLACEHOLDER|${BACKEND_URL_WITH_API}|g" /tmp/nginx-frontend-temp.conf > /tmp/nginx-frontend-temp.conf.new
+
             # Verify replacement worked
             if grep -q "API_BACKEND_URL_PLACEHOLDER" /tmp/nginx-frontend-temp.conf.new; then
               echo "❌ Placeholder replacement failed! Placeholder still found in file."
@@ -277,40 +281,40 @@ jobs:
               grep -A 2 -B 2 "proxy_pass" /tmp/nginx-frontend-temp.conf.new || true
               exit 1
             fi
-            
+
             sudo rm -f /tmp/nginx-frontend-temp.conf
             mv /tmp/nginx-frontend-temp.conf.new /tmp/nginx-frontend-temp.conf
-            
+
             # Show the proxy_pass line for debugging
             echo "proxy_pass line after replacement:"
             grep "proxy_pass" /tmp/nginx-frontend-temp.conf || true
-            
+
             # Copy to final location
             echo "Copying config to $NGINX_CONF..."
             sudo cp /tmp/nginx-frontend-temp.conf $NGINX_CONF
-            
+
             # Verify the file was copied successfully
             if [ ! -f "$NGINX_CONF" ]; then
               echo "❌ Failed to copy nginx config to $NGINX_CONF!"
               exit 1
             fi
-            
+
             # Set proper permissions
             sudo chmod 644 $NGINX_CONF
             echo "✓ Nginx configuration file created at $NGINX_CONF"
-            
+
             # Verify file contents (first few lines for debugging)
             echo "Verifying config file contents..."
             head -n 5 $NGINX_CONF || true
-            
+
             # Cleanup temp file
             rm -f /tmp/nginx-frontend-temp.conf
-            
+
             # Enable site (remove old symlink first if it exists)
             sudo rm -f $NGINX_ENABLED
             sudo ln -sf $NGINX_CONF $NGINX_ENABLED
             echo "✓ Finance-frontend site enabled"
-            
+
             # Verify the symlink was created correctly
             if [ -L "$NGINX_ENABLED" ] && [ -f "$NGINX_CONF" ]; then
               echo "✓ Site symlink verified: $NGINX_ENABLED -> $(readlink -f $NGINX_ENABLED)"
@@ -318,11 +322,11 @@ jobs:
               echo "❌ Failed to enable site! Symlink check failed."
               exit 1
             fi
-            
+
             # List all enabled sites for debugging
             echo "Enabled Nginx sites:"
             ls -la /etc/nginx/sites-enabled/ || true
-            
+
             # Verify config file exists before testing
             if [ ! -f "$NGINX_CONF" ]; then
               echo "❌ Nginx config file not found at $NGINX_CONF!"
@@ -330,10 +334,10 @@ jobs:
               ls -la /etc/nginx/sites-available/ || true
               exit 1
             fi
-            
+
             echo "Config file exists: $NGINX_CONF"
             echo "File size: $(stat -c%s $NGINX_CONF 2>/dev/null || stat -f%z $NGINX_CONF 2>/dev/null || echo 'unknown') bytes"
-            
+
             # Test nginx configuration
             echo "Testing Nginx configuration..."
             sudo nginx -t || {
@@ -352,14 +356,14 @@ jobs:
               sudo cat $NGINX_CONF || true
               exit 1
             }
-            
+
             # Restart nginx to ensure it picks up the new configuration and files
             echo "Restarting Nginx..."
             sudo systemctl restart nginx
-            
+
             # Wait a moment for nginx to fully restart
             sleep 3
-            
+
             # Verify nginx is running
             if sudo systemctl is-active --quiet nginx; then
               echo "✓ Nginx restarted and running successfully!"
@@ -370,10 +374,10 @@ jobs:
               sudo journalctl -u nginx -n 50 --no-pager || true
               exit 1
             fi
-            
+
             # Cleanup
             rm -rf /tmp/deploy-package.tar.gz $EXTRACT_DIR
-            
+
             echo "Deployment completed successfully!"
           DEPLOY_EOF
 
@@ -412,6 +416,9 @@ jobs:
             echo ""
             echo "=== Frontend Files ==="
             ls -lah /var/www/finance-frontend/ | head -10 || true
+            echo ""
+            echo "=== Nginx proxy_pass Configuration ==="
+            sudo grep -A 5 "location /api" /etc/nginx/sites-available/finance-frontend || true
             echo ""
             if sudo systemctl is-active --quiet nginx; then
               if [ -L /etc/nginx/sites-enabled/finance-frontend ]; then
